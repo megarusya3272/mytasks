@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мой трекер задач</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0F0F13; color: #E8E0D0; font-family: 'Mulish', sans-serif; min-height: 100vh; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 16px 80px; }
+
+  h1 { font-family: 'Playfair Display', serif; font-size: 26px; color: #F5EDDA; }
+  .date-line { font-size: 13px; color: #7A7060; margin-top: 4px; text-transform: capitalize; }
+
+  .stats { display: flex; gap: 10px; margin: 22px 0; }
+  .stat { flex: 1; background: #18181F; border: 1px solid #2A2830; border-radius: 12px; padding: 14px 16px; }
+  .stat .num { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; }
+  .stat .lbl { font-size: 11px; color: #6A6458; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  .add-box { background: #18181F; border: 1px solid #2A2830; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+  textarea { width: 100%; background: #0F0F13; border: 1px solid #2A2830; border-radius: 8px; color: #E8E0D0; font-family: 'Mulish', sans-serif; font-size: 14px; padding: 10px 12px; resize: none; outline: none; min-height: 58px; transition: border-color 0.2s; }
+  textarea:focus { border-color: #E8A838; }
+  textarea::placeholder { color: #4A4840; }
+  .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  select { background: #0F0F13; border: 1px solid #2A2830; border-radius: 8px; color: #C8C0B0; font-family: 'Mulish', sans-serif; font-size: 13px; padding: 7px 10px; outline: none; cursor: pointer; }
+  .btn-add { margin-left: auto; background: #E8A838; color: #0F0F13; border: none; border-radius: 8px; padding: 8px 22px; font-family: 'Mulish', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+  .btn-add:hover { background: #F5C050; }
+
+  .section-label { font-size: 11px; color: #4A4840; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .filters { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .fbtn { font-family: 'Mulish', sans-serif; font-size: 12px; border-radius: 20px; padding: 5px 14px; border: 1px solid #2A2830; background: transparent; color: #7A7060; cursor: pointer; transition: all 0.15s; }
+  .fbtn.active { background: #E8A838; color: #0F0F13; border-color: #E8A838; font-weight: 700; }
+  .fbtn.cat-active { font-weight: 700; }
+
+  input[type=text] { background: #18181F; border: 1px solid #2A2830; border-radius: 8px; padding: 8px 12px; font-family: 'Mulish', sans-serif; font-size: 13px; color: #C8C0B0; outline: none; width: 100%; margin-bottom: 16px; }
+  input[type=text]::placeholder { color: #4A4840; }
+
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task { background: #18181F; border: 1px solid #2A2830; border-radius: 12px; padding: 13px 15px; display: flex; align-items: flex-start; gap: 11px; transition: border-color 0.2s, opacity 0.2s; }
+  .task.done { opacity: 0.4; }
+  .task:hover { border-color: #3A3848; }
+  .check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #3A3848; flex-shrink: 0; cursor: pointer; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; user-select: none; }
+  .check.on { background: #52C97A; border-color: #52C97A; }
+  .check.on::after { content: '✓'; color: #0F0F13; font-size: 11px; font-weight: 700; }
+  .task-body { flex: 1; }
+  .task-text { font-size: 14px; color: #D8D0C0; line-height: 1.5; }
+  .task.done .task-text { text-decoration: line-through; color: #6A6458; }
+  .meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .tag { font-size: 11px; border-radius: 5px; padding: 2px 8px; font-weight: 600; }
+  .task-date { font-size: 11px; color: #4A4840; }
+  .del { background: none; border: none; color: #4A4840; cursor: pointer; font-size: 16px; padding: 0 2px; transition: color 0.15s; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+  .del:hover { color: #FF5A5A; }
+  .empty { text-align: center; padding: 40px 0; font-size: 14px; color: #4A4840; }
+
+  .saved-hint { font-size: 11px; color: #4A4840; text-align: center; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="margin-bottom:24px">
+    <h1>📋 Мой трекер задач</h1>
+    <div class="date-line" id="dateLabel"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="num" id="cntPending" style="color:#FF5A5A">0</div><div class="lbl">Не выполнено</div></div>
+    <div class="stat"><div class="num" id="cntDone" style="color:#52C97A">0</div><div class="lbl">Выполнено</div></div>
+    <div class="stat"><div class="num" id="cntAll" style="color:#E8A838">0</div><div class="lbl">Всего задач</div></div>
+  </div>
+
+  <!-- Add -->
+  <div class="add-box">
+    <textarea id="newText" placeholder="Новая задача или заметка... (Enter — добавить)"></textarea>
+    <div class="row">
+      <select id="newCat">
+        <option value="work">💼 Работа</option>
+        <option value="idea">💡 Идеи</option>
+        <option value="personal">🌿 Личное</option>
+      </select>
+      <select id="newPri">
+        <option value="high">⚡ Высокий</option>
+        <option value="mid" selected>⚡ Средний</option>
+        <option value="low">⚡ Низкий</option>
+      </select>
+      <button class="btn-add" onclick="addTask()">+ Добавить</button>
+    </div>
+  </div>
+
+  <!-- Status filter -->
+  <div class="section-label">Статус</div>
+  <div class="filters" id="statusFilters">
+    <button class="fbtn" data-s="all" onclick="setStatus(this)">Все</button>
+    <button class="fbtn active" data-s="pending" onclick="setStatus(this)">Не выполнено</button>
+    <button class="fbtn" data-s="done" onclick="setStatus(this)">Выполнено</button>
+  </div>
+
+  <!-- Category filter -->
+  <div class="section-label" style="margin-top:12px">Категория</div>
+  <div class="filters" id="catFilters">
+    <button class="fbtn active" data-c="all" onclick="setCat(this)">Все</button>
+    <button class="fbtn" data-c="work" onclick="setCat(this)">💼 Работа</button>
+    <button class="fbtn" data-c="idea" onclick="setCat(this)">💡 Идеи</button>
+    <button class="fbtn" data-c="personal" onclick="setCat(this)">🌿 Личное</button>
+  </div>
+
+  <!-- Search -->
+  <input type="text" id="search" placeholder="🔍 Поиск по задачам..." oninput="render()">
+
+  <!-- List -->
+  <div class="task-list" id="taskList"></div>
+
+  <div class="saved-hint">💾 Все задачи сохраняются автоматически в браузере</div>
+</div>
+
+<script>
+const CATS = {
+  work:     { label: 'Работа',  emoji: '💼', color: '#E8A838' },
+  idea:     { label: 'Идеи',    emoji: '💡', color: '#5B8DEF' },
+  personal: { label: 'Личное',  emoji: '🌿', color: '#52C97A' },
+};
+const PRIS = {
+  high: { label: 'Высокий', color: '#FF5A5A' },
+  mid:  { label: 'Средний', color: '#E8A838' },
+  low:  { label: 'Низкий',  color: '#52C97A' },
+};
+
+let tasks = [];
+let statusF = 'pending';
+let catF = 'all';
+
+function load() {
+  const raw = localStorage.getItem('myTasks');
+  tasks = raw ? JSON.parse(raw) : [
+    { id:1, text:'Проверить остатки на складе', category:'work', priority:'high', done:false, date: today() },
+    { id:2, text:'Идея: новый продукт для Vivid Art', category:'idea', priority:'mid', done:false, date: today() },
+    { id:3, text:'Позвонить поставщику', category:'work', priority:'mid', done:false, date: today() },
+  ];
+}
+function save() { localStorage.setItem('myTasks', JSON.stringify(tasks)); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function nextId() { return tasks.length ? Math.max(...tasks.map(t=>t.id)) + 1 : 1; }
+
+function addTask() {
+  const txt = document.getElementById('newText').value.trim();
+  if (!txt) return;
+  tasks.unshift({
+    id: nextId(),
+    text: txt,
+    category: document.getElementById('newCat').value,
+    priority: document.getElementById('newPri').value,
+    done: false,
+    date: today()
+  });
+  document.getElementById('newText').value = '';
+  save(); render();
+}
+
+function toggle(id) {
+  const t = tasks.find(t=>t.id===id);
+  if (t) { t.done = !t.done; save(); render(); }
+}
+function remove(id) {
+  if (!confirm('Удалить задачу?')) return;
+  tasks = tasks.filter(t=>t.id!==id);
+  save(); render();
+}
+
+function setStatus(btn) {
+  statusF = btn.dataset.s;
+  document.querySelectorAll('#statusFilters .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setCat(btn) {
+  catF = btn.dataset.c;
+  document.querySelectorAll('#catFilters .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const c = CATS[catF];
+  if (c) btn.style.background = c.color, btn.style.borderColor = c.color, btn.style.color = '#0F0F13';
+  else btn.style.background = btn.style.borderColor = '';
+  render();
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const filtered = tasks.filter(t => {
+    const sOk = statusF === 'all' ? true : statusF === 'done' ? t.done : !t.done;
+    const cOk = catF === 'all' || t.category === catF;
+    const qOk = !search || t.text.toLowerCase().includes(search);
+    return sOk && cOk && qOk;
+  });
+
+  document.getElementById('cntPending').textContent = tasks.filter(t=>!t.done).length;
+  document.getElementById('cntDone').textContent = tasks.filter(t=>t.done).length;
+  document.getElementById('cntAll').textContent = tasks.length;
+
+  const list = document.getElementById('taskList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Задач не найдено</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(t => {
+    const cat = CATS[t.category];
+    const pri = PRIS[t.priority];
+    return `
+      <div class="task${t.done?' done':''}">
+        <div class="check${t.done?' on':''}" onclick="toggle(${t.id})"></div>
+        <div class="task-body">
+          <div class="task-text">${escHtml(t.text)}</div>
+          <div class="meta">
+            <span class="tag" style="background:${cat.color}22;color:${cat.color}">${cat.emoji} ${cat.label}</span>
+            <span class="tag" style="background:${pri.color}22;color:${pri.color}">⚡ ${pri.label}</span>
+            <span class="task-date">${t.date}</span>
+          </div>
+        </div>
+        <button class="del" onclick="remove(${t.id})">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Date label
+const d = new Date();
+document.getElementById('dateLabel').textContent = d.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+
+// Enter to add
+document.getElementById('newText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask(); }
+});
+
+load(); render();
+</script>
+</body>
+</html>
